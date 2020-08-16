@@ -1,3 +1,3 @@
-import time
+a = {1:22,2:33,3:33}
 
-print(time.strftime('%M', time.localtime(time.time())))
+for i in a:

@@ -742,6 +742,60 @@ p, li { white-space: pre-wrap; }
     <string/>
    </property>
   </widget>
+  <widget class="QCheckBox" name="traffic_limit">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>80</y>
+     <width>81</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <zorder>traffic_limit</zorder>
+  <zorder>backgrounnd</zorder>
+  <zorder>light</zorder>
+  <zorder>exit</zorder>
+  <zorder>minimize</zorder>
+  <zorder>porttext</zorder>
+  <zorder>reset</zorder>
+  <zorder>checkbox_syn</zorder>
+  <zorder>checkbox_icmp</zorder>
+  <zorder>checkbox_udp</zorder>
+  <zorder>checkbox_http</zorder>
+  <zorder>checkbox_ntp</zorder>
+  <zorder>checkbox_ssdp</zorder>
+  <zorder>checkbox_tcp</zorder>
+  <zorder>checkbox_dns</zorder>
+  <zorder>icon_syn</zorder>
+  <zorder>checkbox_alarm</zorder>
+  <zorder>checkbox_defender</zorder>
+  <zorder>icon_icmp</zorder>
+  <zorder>icon_udp</zorder>
+  <zorder>icon_http</zorder>
+  <zorder>icon_ntp</zorder>
+  <zorder>icon_ssdp</zorder>
+  <zorder>icon_tcp</zorder>
+  <zorder>icon_dns</zorder>
+  <zorder>icon_alarm</zorder>
+  <zorder>icon_defender</zorder>
+  <zorder>button_alarm</zorder>
+  <zorder>button_defender</zorder>
+  <zorder>button_syn</zorder>
+  <zorder>button_icmp</zorder>
+  <zorder>button_udp</zorder>
+  <zorder>button_http</zorder>
+  <zorder>button_ntp</zorder>
+  <zorder>button_ssdp</zorder>
+  <zorder>button_tcp</zorder>
+  <zorder>button_dns</zorder>
+  <zorder>console</zorder>
+  <zorder>status_console</zorder>
+  <zorder>traffictext</zorder>
+  <zorder>apply</zorder>
  </widget>
  <resources/>
  <connections/>
