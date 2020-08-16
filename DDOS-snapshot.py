@@ -122,9 +122,9 @@ class MyWindow(QMainWindow, form_class):
         self.checkbox_dns.stateChanged.connect(self.change_image_dns)
         self.button_dns.clicked.connect(self.change_checkbox_dns)
 
-        self.timer = QTimer(self)
-        self.timer.start(1000)
-        self.timer.timeout.connect(self.refresh_status)
+        self.status_timer = QTimer(self)
+        self.status_timer.start(1000)
+        self.status_timer.timeout.connect(self.refresh_status)
 
         self.exit.setStyleSheet(
             '''
@@ -200,6 +200,7 @@ class MyWindow(QMainWindow, form_class):
         print(self.porttext.toPlainText())
 
     def reset_option(self):
+        self.console.setText(None)
         self.porttext.setText('0~65535')
 
     def center(self):
