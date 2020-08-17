@@ -169,11 +169,14 @@ class MyWindow(QMainWindow, form_class):
         self.status_timer = QTimer(self)
         self.status_timer.start(1000)
         self.status_timer.timeout.connect(self.refresh_status)
+<<<<<<< HEAD
 
 
         self.status_timer = QTimer(self)
         self.status_timer.start(3000)
         self.status_timer.timeout.connect(self.indicate_snapshot)
+=======
+>>>>>>> 32508dbf28ef015a7b905ce122f43f32c5ce1eb8
 
         self.exit.setStyleSheet(
             '''
