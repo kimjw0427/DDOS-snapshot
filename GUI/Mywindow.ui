@@ -755,6 +755,71 @@ p, li { white-space: pre-wrap; }
     <string/>
    </property>
   </widget>
+  <widget class="QLabel" name="traffic_box_1">
+   <property name="geometry">
+    <rect>
+     <x>338</x>
+     <y>501</y>
+     <width>45</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="traffic_box_2">
+   <property name="geometry">
+    <rect>
+     <x>338</x>
+     <y>471</y>
+     <width>45</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="traffic_box_3">
+   <property name="geometry">
+    <rect>
+     <x>338</x>
+     <y>441</y>
+     <width>45</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="traffic_box_4">
+   <property name="geometry">
+    <rect>
+     <x>338</x>
+     <y>411</y>
+     <width>45</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="traffic_box_5">
+   <property name="geometry">
+    <rect>
+     <x>338</x>
+     <y>381</y>
+     <width>45</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
   <zorder>traffic_limit</zorder>
   <zorder>backgrounnd</zorder>
   <zorder>light</zorder>
@@ -796,6 +861,11 @@ p, li { white-space: pre-wrap; }
   <zorder>status_console</zorder>
   <zorder>traffictext</zorder>
   <zorder>apply</zorder>
+  <zorder>traffic_box_1</zorder>
+  <zorder>traffic_box_2</zorder>
+  <zorder>traffic_box_3</zorder>
+  <zorder>traffic_box_4</zorder>
+  <zorder>traffic_box_5</zorder>
  </widget>
  <resources/>
  <connections/>

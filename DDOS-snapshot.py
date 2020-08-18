@@ -50,6 +50,7 @@ form_class = uic.loadUiType("GUI\MyWindow.ui")[0]
 image_on = 'GUI/__ON.png'
 image_off = 'GUI/__OFF.png'
 danger_icon = 'GUI/DANGERLIGHT.png'
+traffic_box_icon = 'GUI/__DANGERTRAFFIC.png'
 
 
 temp_syn = None
@@ -76,8 +77,8 @@ def snapshot_icmp():
         global attacker_list
         def analyze_icmp(pkt):
             global temp_icmp
-            if not pkt[0].getlayer(IP).src in attacker_list:
-                if not pkt[0].getlayer(IP).src == get_if_addr(conf.iface):
+            if not pkt[0].getlayer(IP).src == get_if_addr(conf.iface):
+                if not pkt[0].getlayer(IP).src in attacker_list:
                     if not pkt[0].getlayer(IP).src in temp_icmp:
                         temp_icmp[pkt[0].getlayer(IP).src] = 0
                     else:
@@ -222,9 +223,33 @@ class MyWindow(QMainWindow, form_class):
                             )
 
 
+    def refresh_traffic_box(self):
+        if traffic_result >= danger_traffic_limit/5:
+            self.traffic_box_1.setPixmap(QPixmap(traffic_box_icon))
+        else:
+            self.traffic_box_1.setPixmap(QPixmap(None))
+        if traffic_result >= danger_traffic_limit/5*2:
+            self.traffic_box_2.setPixmap(QPixmap(traffic_box_icon))
+        else:
+            self.traffic_box_2.setPixmap(QPixmap(None))
+        if traffic_result >= danger_traffic_limit/5*3:
+            self.traffic_box_3.setPixmap(QPixmap(traffic_box_icon))
+        else:
+            self.traffic_box_3.setPixmap(QPixmap(None))
+        if traffic_result >= danger_traffic_limit/5*4:
+            self.traffic_box_4.setPixmap(QPixmap(traffic_box_icon))
+        else:
+            self.traffic_box_4.setPixmap(QPixmap(None))
+        if traffic_result >= danger_traffic_limit/5*5:
+            self.traffic_box_5.setPixmap(QPixmap(traffic_box_icon))
+        else:
+            self.traffic_box_5.setPixmap(QPixmap(None))
+
+
     def refresh_status(self):
         global traffic_limit
-        self.status_console.setText(f'{traffic_result} Packets/sec\nTotal: {total_traffic_result}')
+        self.status_console.setText(f'{traffic_result} Packets/sec\nTotal: {total_traffic_result} Packets')
+        self.refresh_traffic_box()
         if(traffic_result > danger_traffic_limit):
             if not traffic_limit:
                 traffic_limit = True
