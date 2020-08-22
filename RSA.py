@@ -5,7 +5,7 @@ import decimal
 def tm():
     return time.strftime('%I:%M:%S', time.localtime(time.time()))
 
-RSA = 2300
+RSA = 617
 
 def number():
     return random.randint(10**(RSA-1), 10**RSA-2)
@@ -54,6 +54,8 @@ p = number()
 print(tm())
 print(moduler(2, p, p-1))
 print(tm())
+
+print(format(10**255, 'b'))
 
 # print('소수 구하는 중')
 #

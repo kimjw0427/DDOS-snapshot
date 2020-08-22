@@ -15,6 +15,7 @@ traffic_result = 0
 total_traffic_result = 0
 danger_traffic_limit = 1000
 traffic_limit = False
+over_traffic = True
 
 attacker_list = {0:0}
 except_attacker_list = [0]
@@ -70,6 +71,11 @@ def del_except(src_ip):
     del attacker_list[src_ip]
     del except_attacker_list[except_attacker_list.index(src_ip)]
 
+def del_except_traffic():
+    global over_traffic
+    time.sleep(60)
+    over_traffic = True
+
 
 def snapshot_icmp():
     while(1):
@@ -78,27 +84,37 @@ def snapshot_icmp():
         def analyze_icmp(pkt):
             global temp_icmp
             if not pkt[0].getlayer(IP).src == get_if_addr(conf.iface):
-                if not pkt[0].getlayer(IP).src in attacker_list:
-                    if not pkt[0].getlayer(IP).src in temp_icmp:
-                        temp_icmp[pkt[0].getlayer(IP).src] = 0
-                    else:
-                        temp_icmp[pkt[0].getlayer(IP).src] = temp_icmp.get(pkt[0].getlayer(IP).src) + 1
+                if not pkt[0].getlayer(IP).src in temp_icmp:
+                    temp_icmp[pkt[0].getlayer(IP).src] = 1
+                else:
+                    temp_icmp[pkt[0].getlayer(IP).src] = temp_icmp.get(pkt[0].getlayer(IP).src) + 1
         temp_icmp = {0:0}
         sniff(prn=analyze_icmp, filter='icmp', timeout=2)
-        for src_ip in temp_icmp:
-            if temp_icmp.get(src_ip) > (danger_traffic_limit / 10):
-                attacker_list[src_ip] = 'icmp'
-                thread_del_icmp = Thread(target=del_except, args=(src_ip,))
-                thread_del_icmp.daemon = True
-                thread_del_icmp.start()
-
-
+        not_spoofed_packet = 0
+        if traffic_limit:
+            for src_ip in temp_icmp:
+                if temp_icmp.get(src_ip) > (danger_traffic_limit / 100):
+                    if not src_ip in attacker_list:
+                        attacker_list[src_ip] = 'icmp'
+                        thread_del = Thread(target=del_except, args=(src_ip,))
+                        thread_del.daemon = True
+                        thread_del.start()
+                    not_spoofed_packet = not_spoofed_packet + temp_icmp.get(src_ip)
+            if not_spoofed_packet < (danger_traffic_limit / 2):
+                if not 'IP 스푸핑(ICMP)' in attacker_list:
+                    attacker_list['IP 스푸핑(ICMP)'] = 'icmp'
+                    thread_del = Thread(target=del_except, args=('IP 스푸핑(ICMP)',))
+                    thread_del.daemon = True
+                    thread_del.start()
 
 
 def snapshot():
     thread_snapshot_icmp = Thread(target=snapshot_icmp)
     thread_snapshot_icmp.daemon = True
     thread_snapshot_icmp.start()
+    # thread_snapshot_udp = Thread(target=snapshot_udp)
+    # thread_snapshot_udp.daemon = True
+    # thread_snapshot_udp.start()
 
 
 def start_thread():
@@ -212,12 +228,12 @@ class MyWindow(QMainWindow, form_class):
             for src_ip in attacker_list:
                 if not src_ip in except_attacker_list:
                     if attacker_list.get(src_ip) == 'icmp':
-                        self.console.append(f'[{tm()}] 공격자:{src_ip} 공격유형: ICMP flood')
+                        self.console.append(f'[{tm()}] 공격자: {src_ip} 공격유형: ICMP flood')
                         except_attacker_list.append(src_ip)
                         if self.checkbox_alarm.isChecked():
                             self.trayIcon.showMessage(
                                 "DDOS 스냅샷",
-                                f'[{tm()}] 공격을 감지했습니다!\n공격자:{src_ip}\n공격유형: ICMP flood.',
+                                f'[{tm()}] 공격을 감지했습니다!\n공격자: {src_ip}\n공격유형: ICMP flood.',
                                 QSystemTrayIcon.Information,
                                 2000
                             )
@@ -248,20 +264,26 @@ class MyWindow(QMainWindow, form_class):
 
     def refresh_status(self):
         global traffic_limit
+        global over_traffic
         self.status_console.setText(f'{traffic_result} Packets/sec\nTotal: {total_traffic_result} Packets')
         self.refresh_traffic_box()
         if(traffic_result > danger_traffic_limit):
             if not traffic_limit:
                 traffic_limit = True
                 self.light.setPixmap(QPixmap(danger_icon))
-                self.console.append(f'[{tm()}] 트래픽이 임계치를 넘겼습니다. 패킷을 분석합니다.')
-                if self.checkbox_alarm.isChecked():
-                    self.trayIcon.showMessage(
-                        "DDOS 스냅샷",
-                        f'[{tm()}] 트래픽이 임계치를 넘겼습니다. 패킷을 분석합니다.',
-                        QSystemTrayIcon.Information,
-                        2000
-                    )
+                if over_traffic:
+                    over_traffic = False
+                    self.console.append(f'[{tm()}] 트래픽이 임계치를 넘겼습니다. 패킷을 분석합니다.')
+                    if self.checkbox_alarm.isChecked():
+                        self.trayIcon.showMessage(
+                            "DDOS 스냅샷",
+                            f'[{tm()}] 트래픽이 임계치를 넘겼습니다. 패킷을 분석합니다.',
+                            QSystemTrayIcon.Information,
+                            2000
+                        )
+                    traffic_thread = Thread(target=del_except_traffic)
+                    traffic_thread.daemon = True
+                    traffic_thread.start()
         else:
             traffic_limit = False
             self.light.setPixmap(QPixmap(None))
