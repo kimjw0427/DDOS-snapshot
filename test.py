@@ -17,6 +17,8 @@ danger_traffic_limit = 1000
 traffic_limit = False
 over_traffic = True
 
+low_traffic_dos_multiply = 20
+
 attacker_list = {0:0}
 except_attacker_list = [0]
 
@@ -55,14 +57,7 @@ traffic_box_icon = 'GUI/__DANGERTRAFFIC.png'
 
 packet = None
 
-temp_syn = None
-temp_icmp = None
-temp_udp = None
-temp_http = None
-temp_ntp = None
-temp_ssdp = None
-temp_tcp = None
-temp_dns = None
+temp_packet = None
 
 
 def del_except(src_ip):
@@ -78,56 +73,182 @@ def del_except_traffic():
     over_traffic = True
 
 
-def snapshot_icmp():
-    while(1):
-        global temp_icmp
-        global attacker_list
-        global packet
-        def analyze_icmp(pkt):
-            global packet
-            global temp_icmp
-            if not pkt[0].getlayer(IP).src == get_if_addr(conf.iface):
-                if 'IMCP' in pkt:
-                    if pkt[0].getlayer(ICMP).type == 8:
-                        if not pkt[0].getlayer(IP).src in temp_icmp:
-                            temp_icmp[f'ICMP(type=8) {pkt[0].getlayer(IP).src} None'] = 0
-                        else:
-                            temp_icmp[f'ICMP(type=8) {pkt[0].getlayer(IP).src} None'] = temp_icmp[f'ICMP(type=8) {pkt[0].getlayer(IP).src} None'] + 1
-                        if not 'ICMP(type=8)' in packet:
-                            packet['ICMP(type=8) None'] = 0
-                        else:
-                            packet['ICMP(type=8) None'] = packet.get('ICMP(type=8) None') + 1
-        temp_icmp = {None:None}
-        packet = {None: [None, None]}
-        sniff(prn=analyze_icmp, timeout=2)
-        if traffic_limit:
-            for name in temp_icmp:
-                P_type = name.split()[0]
-                P_IP = name.split()[1]
-                P_PORT = name.split()[2]
-                P_COUNT = temp_icmp.get(name)
-                if P_COUNT > (danger_traffic_limit / 100):
-                    if not name in attacker_list:
-                        attacker_list[P_IP] = f'{P_type} {}'
-                        thread_del = Thread(target=del_except, args=(src_ip,))
-                        thread_del.daemon = True
-                        thread_del.start()
-                    not_spoofed_packet = not_spoofed_packet + temp_icmp.get(src_ip)
-            if not_spoofed_packet < (danger_traffic_limit / 2):
-                if not 'IP 스푸핑(ICMP)' in attacker_list:
-                    attacker_list['IP 스푸핑(ICMP)'] = 'icmp'
-                    thread_del = Thread(target=del_except, args=('IP 스푸핑(ICMP)',))
-                    thread_del.daemon = True
-                    thread_del.start()
+def attack_type(type): # Protocol/Attack_type/High_traffic_attack = HT or Low_traffic_attack = LT
+    type = type.replace('(',',').replace(')',',').split(',')
+    if 'ICMP' in type:
+        if '8' in type:
+            if 'POD' in  type:
+                return 'ICMP/Ping Of Death/HT'
+            elif 'None' in type:
+                return 'ICMP/ICMP Flood/HT'
+        elif '3' in type:
+            return 'ICMP/Black Nurse/LT'
+        elif '0' in type:
+            return 'ICMP/Smurf Attack/HT'
+    if 'UDP' in type:
+        if 'DNS' in type:
+            return 'UDP/DNS DRDOS/HT'
+        elif 'None' in type:
+            return 'UDP/UDP Flood/HT'
+    if 'TCP' in type:
+        if 'S' in type:
+            if 'TSUNAMI' in type:
+                return 'TCP/TSUNAMI SYN Flood/HT'
+            elif 'None' in type:
+                return ' TCP/SYN Flood/HT'
+        if 'R' in type:
+            return 'TCP/TCP Reset Attack/HT'
+        if 'SA' in type:
+            return 'TCP/TCP DRDOS/HT'
+        if 'F' in type:
+            return 'TCP/FIN Flood/HT'
+    if 'HTTP' in type:
+        if 'SlowGet' in type:
+            return 'HTTP/Slowloris/LT'
+        if 'SlowPost' in type:
+            return 'HTTP/RUDY/LT'
+    else:
+        return None
 
+def analyze_icmp(pkt): # type = Packet_type,~/High_traffic_attack = 1 or Low_traffic_attack = low_traffic_dos_multiply
+    if 'Raw' in pkt:
+        if len(pkt[Raw].load) >= 1000:
+            type = f'{pkt[ICMP].type},POD/1'
+        else:
+            type = f'{pkt[ICMP].type},None/1'
+    else:
+        type = f'{pkt[ICMP].type},None/1'
+    if pkt[ICMP].type == 3:
+        type = f'{pkt[ICMP].type},None/{str(low_traffic_dos_multiply)}'
+    if not f'ICMP({type.split("/")[0]}) {pkt[IP].src} None' in temp_packet:
+        temp_packet[f'ICMP({type.split("/")[0]}) {pkt[IP].src} None'] = 0
+    else:
+        temp_packet[f'ICMP({type.split("/")[0]}) {pkt[IP].src} None'] = temp_packet.get(
+            f'ICMP({type.split("/")[0]}) {pkt[IP].src} None') + 1*int(type.split("/")[1])
+    if not f'ICMP({type.split("/")[0]}) None' in packet:
+        packet[f'ICMP({type.split("/")[0]}) None'] = 0
+    else:
+        packet[f'ICMP({type.split("/")[0]}) None']\
+            = packet.get(f'ICMP({type.split("/")[0]}) None') + 1*int(type.split("/")[1])
+
+def analyze_udp(pkt):
+    if 'DNS' in pkt:
+        if not pkt[DNS].qd == None or not pkt[DNS].an == None or not pkt[DNS].ns == None or not pkt[DNS].ar == None:
+            type = 'DNS/1'
+        else:
+            type = 'None/1'
+    else:
+        type = 'None/1'
+    if not f'UDP({type.split("/")[0]}) {pkt[IP].src} {pkt[UDP].dport}' in temp_packet:
+        temp_packet[f'UDP({type.split("/")[0]}) {pkt[IP].src} {pkt[UDP].dport}'] = 0
+    else:
+        temp_packet[f'UDP({type.split("/")[0]}) {pkt[IP].src} {pkt[UDP].dport}'] = temp_packet.get(
+            f'UDP({type.split("/")[0]}) {pkt[IP].src} {pkt[UDP].dport}') + 1*int(type.split("/")[1])
+    if not f'UDP({type.split("/")[0]}) {pkt[UDP].dport}' in packet:
+        packet[f'UDP({type.split("/")[0]}) {pkt[UDP].dport}'] = 0
+    else:
+        packet[f'UDP({type.split("/")[0]}) {pkt[UDP].dport}']\
+            = packet.get(f'UDP({type.split("/")[0]}) {pkt[UDP].dport}') + 1*int(type.split("/")[1])
+
+def analyze_tcp(pkt):
+    if 'Raw' in pkt:
+        if len(pkt[Raw].load) >= 1000:
+            type = f'{pkt[TCP].flags},TSUNAMI/1'
+        else:
+            type = f'{pkt[TCP].flags},NONE/1'
+    else:
+        type = f'{pkt[TCP].flags},NONE/1'
+    if not f'TCP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}' in temp_packet:
+        temp_packet[f'TCP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}'] = 0
+    else:
+        temp_packet[f'TCP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}'] = temp_packet.get(
+            f'TCP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}') + 1*int(type.split("/")[1])
+    if not f'TCP({type.split("/")[0]}) {pkt[TCP].dport}' in packet:
+        packet[f'TCP({type.split("/")[0]}) {pkt[TCP].dport}'] = 0
+    else:
+        packet[f'TCP({type.split("/")[0]}) {pkt[TCP].dport}'] = packet.get(
+            f'TCP({type.split("/")[0]}) {pkt[TCP].dport}') + 1*int(type.split("/")[1])
+
+def analyze_http(pkt):
+    if 'Raw' in pkt:
+        if not str(pkt[Raw].load).find('GET') == -1:
+            if str(pkt[Raw].load).find('\\r\\n\\r\\n') == -1:
+                type = f'SlowGet/{str(low_traffic_dos_multiply)}'
+            else:
+                type = 'None/1'
+        elif not str(pkt[Raw].load).find('POST') == -1:
+            payload = str(pkt[Raw].load).replace('\\r\\n',' ').split()
+            if int(payload[payload.index('Content-Length:')+1]) >= 5000:
+                type = f'SlowPost/{str(low_traffic_dos_multiply)}'
+            else:
+                type = 'None/1'
+        else:
+            type = 'None/1'
+    else:
+        type = 'None/1'
+    if not f'HTTP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}' in temp_packet:
+        temp_packet[f'HTTP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}'] = 0
+    else:
+        temp_packet[f'HTTP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}'] = temp_packet.get(
+            f'HTTP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}') + 1*int(type.split("/")[1])
+    if not f'HTTP({type.split("/")[0]}) {pkt[TCP].dport}' in packet:
+        packet[f'HTTP({type.split("/")[0]}) {pkt[TCP].dport}'] = 0
+    else:
+        packet[f'HTTP({type.split("/")[0]}) {pkt[TCP].dport}'] = packet.get(
+            f'HTTP({type.split("/")[0]}) {pkt[TCP].dport}') + 1*int(type.split("/")[1])
+
+
+def handler(pkt):
+    global packet
+    global temp_packet
+    if 'IP' in pkt:
+        if not pkt[IP].src == get_if_addr(conf.iface):
+            if 'ICMP' in pkt:
+                analyze_icmp(pkt)
+            if 'UDP' in pkt:
+                analyze_udp(pkt)
+            if 'TCP' in pkt:
+                if 'Raw' in pkt:
+                    if str(pkt[Raw].load).find('HTTP') == -1:
+                        analyze_tcp(pkt)
+                    else:
+                        analyze_http(pkt)
+                else:
+                    analyze_tcp(pkt)
 
 def snapshot():
-    thread_snapshot_icmp = Thread(target=snapshot_icmp)
-    thread_snapshot_icmp.daemon = True
-    thread_snapshot_icmp.start()
-    # thread_snapshot_udp = Thread(target=snapshot_udp)
-    # thread_snapshot_udp.daemon = True
-    # thread_snapshot_udp.start()
+    while(1):
+        global temp_packet
+        global attacker_list
+        global packet
+        temp_packet = {None:None}
+        packet = {None:None}
+        sniff(prn=handler, timeout=2)
+        for name in temp_packet:
+            if not name == None:
+                P_type = name.split()[0]
+                P_ip = name.split()[1]
+                P_port = name.split()[2]
+                P_count = temp_packet.get(name)
+                if P_count > (danger_traffic_limit*2 / (danger_traffic_limit/50)):
+                    print(name)
+                    if not f'{P_ip} {P_type}' in attacker_list:
+                        attacker_list[f'{P_ip} {P_type}'] = f'{P_type} {P_port}'
+                        thread_del = Thread(target=del_except, args=(f'{P_ip} {P_type}',))
+                        thread_del.daemon = True
+                        thread_del.start()
+                    packet[f'{P_type} {P_port}'] = packet[f'{P_type} {P_port}'] - P_count
+        for name in packet:
+            if not name == None:
+                P_type = name.split()[0]
+                P_port = name.split()[1]
+                P_count = packet.get(name)
+                if P_count > (danger_traffic_limit / 2):
+                    if not f'[위조된_IP] {P_type}' in attacker_list:
+                        attacker_list[f'[위조된_IP] {P_type}'] = f'{P_type} {P_port}'
+                        thread_del = Thread(target=del_except, args=(f'[위조된_IP] {P_type}',))
+                        thread_del.daemon = True
+                        thread_del.start()
 
 
 def start_thread():
@@ -172,8 +293,8 @@ class MyWindow(QMainWindow, form_class):
         self.checkbox_defender.stateChanged.connect(self.change_image_defender)
         self.button_defender.clicked.connect(self.change_checkbox_defender)
 
-        self.checkbox_syn.stateChanged.connect(self.change_image_syn)
-        self.button_syn.clicked.connect(self.change_checkbox_syn)
+        self.checkbox_tcp.stateChanged.connect(self.change_image_tcp)
+        self.button_tcp.clicked.connect(self.change_checkbox_tcp)
 
         self.checkbox_icmp.stateChanged.connect(self.change_image_icmp)
         self.button_icmp.clicked.connect(self.change_checkbox_icmp)
@@ -183,18 +304,6 @@ class MyWindow(QMainWindow, form_class):
 
         self.checkbox_http.stateChanged.connect(self.change_image_http)
         self.button_http.clicked.connect(self.change_checkbox_http)
-
-        self.checkbox_ntp.stateChanged.connect(self.change_image_ntp)
-        self.button_ntp.clicked.connect(self.change_checkbox_ntp)
-
-        self.checkbox_ssdp.stateChanged.connect(self.change_image_ssdp)
-        self.button_ssdp.clicked.connect(self.change_checkbox_ssdp)
-
-        self.checkbox_tcp.stateChanged.connect(self.change_image_tcp)
-        self.button_tcp.clicked.connect(self.change_checkbox_tcp)
-
-        self.checkbox_dns.stateChanged.connect(self.change_image_dns)
-        self.button_dns.clicked.connect(self.change_checkbox_dns)
 
         self.status_timer = QTimer(self)
         self.status_timer.start(1000)
@@ -237,19 +346,35 @@ class MyWindow(QMainWindow, form_class):
 
     def indicate_snapshot(self):
         global except_attacker_list
-        if traffic_limit:
-            for src_ip in attacker_list:
-                if not src_ip in except_attacker_list:
-                    if attacker_list.get(src_ip) == 'icmp':
-                        self.console.append(f'[{tm()}] 공격자: {src_ip} 공격유형: ICMP flood')
-                        except_attacker_list.append(src_ip)
+        for name in attacker_list:
+            if not name in except_attacker_list:
+                if not attack_type(attacker_list.get(name).split()[0]) == None:
+                    type = attack_type(attacker_list.get(name).split()[0]).split('/')
+                    if (type[2] == 'LT'):
+                        self.console.append(f' \n[{tm()}] 공격자: {name.split()[0]}\n'
+                                            f'└> 공격유형: {type[1]} △ 저대역폭 공격\n'
+                                            f'└> 포트: {attacker_list.get(name).split()[1]}')
                         if self.checkbox_alarm.isChecked():
                             self.trayIcon.showMessage(
                                 "DDOS 스냅샷",
-                                f'[{tm()}] 공격을 감지했습니다!\n공격자: {src_ip}\n공격유형: ICMP flood.',
+                                f'[{tm()}] 공격을 감지했습니다!\n공격자: {name.split()[0]}\n'
+                                f'공격유형: {type[1]} △ 저대역폭 공격',
                                 QSystemTrayIcon.Information,
                                 2000
                             )
+                    elif traffic_limit:
+                        self.console.append(f' \n[{tm()}] 공격자: {name.split()[0]}\n'
+                                            f'└> 공격유형: {type[1]}\n'
+                                            f'└> 포트: {attacker_list.get(name).split()[1]}')
+                        if self.checkbox_alarm.isChecked():
+                            self.trayIcon.showMessage(
+                                "DDOS 스냅샷",
+                                f'[{tm()}] 공격을 감지했습니다!\n공격자: {name.split()[0]}\n'
+                                f'공격유형: {type[1]}',
+                                QSystemTrayIcon.Information,
+                                2000
+                            )
+                except_attacker_list.append(name)
 
 
     def refresh_traffic_box(self):
@@ -383,17 +508,17 @@ class MyWindow(QMainWindow, form_class):
         else:
             self.checkbox_defender.setChecked(True)
 
-    def change_image_syn(self):
-        if self.checkbox_syn.isChecked():
-            self.icon_syn.setPixmap(QPixmap(image_on))
+    def change_image_tcp(self):
+        if self.checkbox_tcp.isChecked():
+            self.icon_tcp.setPixmap(QPixmap(image_on))
         else:
-            self.icon_syn.setPixmap(QPixmap(image_off))
+            self.icon_tcp.setPixmap(QPixmap(image_off))
 
-    def change_checkbox_syn(self):
-        if self.checkbox_syn.isChecked():
-            self.checkbox_syn.setChecked(False)
+    def change_checkbox_tcp(self):
+        if self.checkbox_tcp.isChecked():
+            self.checkbox_tcp.setChecked(False)
         else:
-            self.checkbox_syn.setChecked(True)
+            self.checkbox_tcp.setChecked(True)
 
     def change_image_icmp(self):
         if self.checkbox_icmp.isChecked():
@@ -430,54 +555,6 @@ class MyWindow(QMainWindow, form_class):
             self.checkbox_http.setChecked(False)
         else:
             self.checkbox_http.setChecked(True)
-
-    def change_image_ntp(self):
-        if self.checkbox_ntp.isChecked():
-            self.icon_ntp.setPixmap(QPixmap(image_on))
-        else:
-            self.icon_ntp.setPixmap(QPixmap(image_off))
-
-    def change_checkbox_ntp(self):
-        if self.checkbox_ntp.isChecked():
-            self.checkbox_ntp.setChecked(False)
-        else:
-            self.checkbox_ntp.setChecked(True)
-
-    def change_image_ssdp(self):
-        if self.checkbox_ssdp.isChecked():
-            self.icon_ssdp.setPixmap(QPixmap(image_on))
-        else:
-            self.icon_ssdp.setPixmap(QPixmap(image_off))
-
-    def change_checkbox_ssdp(self):
-        if self.checkbox_ssdp.isChecked():
-            self.checkbox_ssdp.setChecked(False)
-        else:
-            self.checkbox_ssdp.setChecked(True)
-
-    def change_image_tcp(self):
-        if self.checkbox_tcp.isChecked():
-            self.icon_tcp.setPixmap(QPixmap(image_on))
-        else:
-            self.icon_tcp.setPixmap(QPixmap(image_off))
-
-    def change_checkbox_tcp(self):
-        if self.checkbox_tcp.isChecked():
-            self.checkbox_tcp.setChecked(False)
-        else:
-            self.checkbox_tcp.setChecked(True)
-
-    def change_image_dns(self):
-        if self.checkbox_dns.isChecked():
-            self.icon_dns.setPixmap(QPixmap(image_on))
-        else:
-            self.icon_dns.setPixmap(QPixmap(image_off))
-
-    def change_checkbox_dns(self):
-        if self.checkbox_dns.isChecked():
-            self.checkbox_dns.setChecked(False)
-        else:
-            self.checkbox_dns.setChecked(True)
 
 
 if __name__ == "__main__":
