@@ -561,7 +561,7 @@ class MyWindow(QMainWindow, form_class):
 
     def reset_option(self):
         conf.iface = default_interface
-        self.porttext.setText(str(default_interface))
+        self.interfacetext.setText(str(default_interface))
         self.console.append(f'[{tm()}] 네트워크 인터페이스 리셋')
 
     def center(self):
