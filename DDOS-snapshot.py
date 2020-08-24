@@ -115,6 +115,7 @@ image_on = 'GUI/__ON.png'
 image_off = 'GUI/__OFF.png'
 danger_icon = 'GUI/DANGERLIGHT.png'
 traffic_box_icon = 'GUI/__DANGERTRAFFIC.png'
+icon = 'GUI/ICON.png'
 
 packet = None
 
@@ -339,7 +340,7 @@ class MyWindow(QMainWindow, form_class):
         super().__init__()
         self.setupUi(self)
 
-        self.trayIcon = QSystemTrayIcon(QIcon('GUI/SAFELIGHT.png'), parent=app)
+        self.trayIcon = QSystemTrayIcon(QIcon(icon), parent=app)
         self.trayIcon.setToolTip('Detecting DDOS!')
         self.trayIcon.show()
 

@@ -7,7 +7,7 @@ ip = '192.168.219.103'
 
 dummy = 'a'*1460
 
-pkt = Ether() / IP(dst=ip) / dummy
+pkt = Ether() / IP(dst=ip) / TCP(dport=80, flags='S') / dummy
 
 def send_thread():
     while(1):
