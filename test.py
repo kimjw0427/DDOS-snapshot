@@ -107,8 +107,11 @@ def attack_type(type): # Protocol/Attack_type/High_traffic_attack = HT or Low_tr
             return 'HTTP/Slowloris/LT'
         if 'SlowPost' in type:
             return 'HTTP/RUDY/LT'
+        if 'SlowRead' in type:
+            return 'HTTP/Slow HTTP Read Attack/LT'
     else:
-        return None
+        return 'None/None/None'
+    return 'None/None/None'
 
 def analyze_icmp(pkt): # type = Packet_type,~/High_traffic_attack = 1 or Low_traffic_attack = low_traffic_dos_multiply
     if 'Raw' in pkt:
@@ -170,7 +173,9 @@ def analyze_tcp(pkt):
             f'TCP({type.split("/")[0]}) {pkt[TCP].dport}') + 1*int(type.split("/")[1])
 
 def analyze_http(pkt):
-    if 'Raw' in pkt:
+    if pkt[TCP].window <= 200:
+        type = f'SlowRead/{str(low_traffic_dos_multiply)}'
+    elif 'Raw' in pkt:
         if not str(pkt[Raw].load).find('GET') == -1:
             if str(pkt[Raw].load).find('\\r\\n\\r\\n') == -1:
                 type = f'SlowGet/{str(low_traffic_dos_multiply)}'
@@ -233,10 +238,11 @@ def snapshot():
                 if P_count > (danger_traffic_limit*2 / (danger_traffic_limit/50)):
                     print(name)
                     if not f'{P_ip} {P_type}' in attacker_list:
-                        attacker_list[f'{P_ip} {P_type}'] = f'{P_type} {P_port}'
-                        thread_del = Thread(target=del_except, args=(f'{P_ip} {P_type}',))
-                        thread_del.daemon = True
-                        thread_del.start()
+                        if attack_type(P_type).split('/')[2] == 'LT' or traffic_limit:
+                            attacker_list[f'{P_ip} {P_type}'] = f'{P_type} {P_port}'
+                            thread_del = Thread(target=del_except, args=(f'{P_ip} {P_type}',))
+                            thread_del.daemon = True
+                            thread_del.start()
                     packet[f'{P_type} {P_port}'] = packet[f'{P_type} {P_port}'] - P_count
         for name in packet:
             if not name == None:
@@ -245,10 +251,11 @@ def snapshot():
                 P_count = packet.get(name)
                 if P_count > (danger_traffic_limit / 2):
                     if not f'[위조된_IP] {P_type}' in attacker_list:
-                        attacker_list[f'[위조된_IP] {P_type}'] = f'{P_type} {P_port}'
-                        thread_del = Thread(target=del_except, args=(f'[위조된_IP] {P_type}',))
-                        thread_del.daemon = True
-                        thread_del.start()
+                        if attack_type(P_type).split('/')[2] == 'LT' or traffic_limit:
+                            attacker_list[f'[위조된_IP] {P_type}'] = f'{P_type} {P_port}'
+                            thread_del = Thread(target=del_except, args=(f'[위조된_IP] {P_type}',))
+                            thread_del.daemon = True
+                            thread_del.start()
 
 
 def start_thread():
