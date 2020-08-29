@@ -15,7 +15,7 @@ interface = conf.iface
 
 traffic_result = 0
 total_traffic_result = 0
-danger_traffic_limit = 1000
+danger_traffic_limit = 5000
 traffic_limit = False
 over_traffic = True
 
@@ -295,7 +295,6 @@ def snapshot():
         sniff(prn=handler, timeout=2)
         for name in temp_packet:
             if not name == None:
-                print(name)
                 P_type = name.split()[0]
                 P_ip = name.split()[1]
                 P_port = name.split()[2]
