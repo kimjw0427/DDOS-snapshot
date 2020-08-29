@@ -222,9 +222,9 @@ def analyze_tcp(pkt):
         if len(pkt[Raw].load) >= 1000:
             type = f'{pkt[TCP].flags},TSUNAMI/1'
         else:
-            type = f'{pkt[TCP].flags},NONE/1'
+            type = f'{pkt[TCP].flags},None/1'
     else:
-        type = f'{pkt[TCP].flags},NONE/1'
+        type = f'{pkt[TCP].flags},None/1'
     if not f'TCP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}' in temp_packet:
         temp_packet[f'TCP({type.split("/")[0]}) {pkt[IP].src} {pkt[TCP].dport}'] = 0
     else:
