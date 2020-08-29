@@ -136,7 +136,6 @@ def del_except_traffic():
 
 def attack_type(type): # Protocol/Attack_type/High_traffic_attack = HT or Low_traffic_attack = LT
     type = type.replace('(',',').replace(')',',').split(',')
-    print(type)
     if 'ICMP' in type:
         if '8' in type:
             if 'POD' in type:
@@ -295,6 +294,7 @@ def snapshot():
         sniff(prn=handler, timeout=2)
         for name in temp_packet:
             if not name == None:
+                print(name)
                 P_type = name.split()[0]
                 P_ip = name.split()[1]
                 P_port = name.split()[2]
