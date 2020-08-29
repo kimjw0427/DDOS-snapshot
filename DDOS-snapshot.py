@@ -74,7 +74,6 @@ def change_ip(self):
 
 
 def activate_proto(self, proto):
-    print(1)
     if proto == 'TCP':
         if self.checkbox_tcp.isChecked():
             return True
@@ -139,7 +138,7 @@ def attack_type(type): # Protocol/Attack_type/High_traffic_attack = HT or Low_tr
     type = type.replace('(',',').replace(')',',').split(',')
     if 'ICMP' in type:
         if '8' in type:
-            if 'POD' in  type:
+            if 'POD' in type:
                 return 'ICMP/Ping Of Death/HT'
             elif 'None' in type:
                 return 'ICMP/ICMP Flood/HT'
@@ -308,18 +307,20 @@ def snapshot():
                             thread_del.daemon = True
                             thread_del.start()
                     packet[f'{P_type} {P_port}'] = packet[f'{P_type} {P_port}'] - P_count
-            for name in packet:
-                if not name == None:
-                    P_type = name.split()[0]
-                    P_port = name.split()[1]
-                    P_count = packet.get(name)
-                    if P_count > (danger_traffic_limit / 2):
-                        if not f'[위조된_IP] {P_type}' in attacker_list:
-                            if attack_type(P_type).split('/')[2] == 'LT' or traffic_limit:
-                                attacker_list[f'[위조된_IP] {P_type}'] = f'{P_type} {P_port}'
-                                thread_del = Thread(target=del_except, args=(f'[위조된_IP] {P_type}',))
-                                thread_del.daemon = True
-                                thread_del.start()
+                    print('1',P_count)
+        for name in packet:
+            if not name == None:
+                P_type = name.split()[0]
+                P_port = name.split()[1]
+                P_count = packet.get(name)
+                print('2',P_count)
+                if P_count > (danger_traffic_limit / 2):
+                    if not f'[위조된_IP] {P_type}' in attacker_list:
+                        if attack_type(P_type).split('/')[2] == 'LT' or traffic_limit:
+                            attacker_list[f'[위조된_IP] {P_type}'] = f'{P_type} {P_port}'
+                            thread_del = Thread(target=del_except, args=(f'[위조된_IP] {P_type}',))
+                            thread_del.daemon = True
+                            thread_del.start()
 
 def start_thread():
     online_thread = Thread(target=online)
