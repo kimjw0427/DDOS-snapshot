@@ -136,6 +136,7 @@ def del_except_traffic():
 
 def attack_type(type): # Protocol/Attack_type/High_traffic_attack = HT or Low_traffic_attack = LT
     type = type.replace('(',',').replace(')',',').split(',')
+    print(type)
     if 'ICMP' in type:
         if '8' in type:
             if 'POD' in type:
@@ -158,7 +159,7 @@ def attack_type(type): # Protocol/Attack_type/High_traffic_attack = HT or Low_tr
             if 'TSUNAMI' in type:
                 return 'TCP/TSUNAMI SYN Flood/HT'
             elif 'None' in type:
-                return ' TCP/SYN Flood/HT'
+                return 'TCP/SYN Flood/HT'
         if 'R' in type:
             return 'TCP/TCP Reset Attack/HT'
         if 'SA' in type:
@@ -299,7 +300,6 @@ def snapshot():
                 P_port = name.split()[2]
                 P_count = temp_packet.get(name)
                 if P_count > (danger_traffic_limit*2 / (danger_traffic_limit/50)):
-                    print(name)
                     if not f'{P_ip} {P_type}' in attacker_list:
                         if attack_type(P_type).split('/')[2] == 'LT' or traffic_limit:
                             attacker_list[f'{P_ip} {P_type}'] = f'{P_type} {P_port}'
@@ -307,13 +307,11 @@ def snapshot():
                             thread_del.daemon = True
                             thread_del.start()
                     packet[f'{P_type} {P_port}'] = packet[f'{P_type} {P_port}'] - P_count
-                    print('1',P_count)
         for name in packet:
             if not name == None:
                 P_type = name.split()[0]
                 P_port = name.split()[1]
                 P_count = packet.get(name)
-                print('2',P_count)
                 if P_count > (danger_traffic_limit / 2):
                     if not f'[위조된_IP] {P_type}' in attacker_list:
                         if attack_type(P_type).split('/')[2] == 'LT' or traffic_limit:
@@ -420,46 +418,45 @@ class MyWindow(QMainWindow, form_class):
         global except_attacker_list
         for name in attacker_list:
             if not name in except_attacker_list:
-                if not attack_type(attacker_list.get(name).split()[0]) == None:
-                    type = attack_type(attacker_list.get(name).split()[0]).split('/')
-                    if activate_proto(self, type[0]):
-                        if (type[2] == 'LT'):
-                            self.console.append(f' \n[{tm()}] 공격자: {name.split()[0]}\n'
-                                                f'└> 공격유형: {type[1]} △ 저대역폭 공격\n'
-                                                f'└> 포트: {attacker_list.get(name).split()[1]}')
-                            if self.checkbox_alarm.isChecked():
-                                self.trayIcon.showMessage(
-                                    "DDOS 스냅샷",
-                                    f'[{tm()}] 공격을 감지했습니다!\n공격자: {name.split()[0]}\n'
-                                    f'공격유형: {type[1]} △ 저대역폭 공격',
-                                    QSystemTrayIcon.Information,
-                                    2000
-                                )
-                            if self.checkbox_defender.isChecked():
-                                if check_su():
-                                    self.console.append(f'\n[{tm()}] IP를 바꿔 공격을 우회하는 중입니다.')
-                                    change_ip(self)
-                                else:
-                                    self.console.append(f'[{tm()}] 관리자 권한이 없습니다. 방어기능이 작동하지 않습니다.')
-                        elif traffic_limit:
-                            self.console.append(f' \n[{tm()}] 공격자: {name.split()[0]}\n'
-                                                f'└> 공격유형: {type[1]}\n'
-                                                f'└> 포트: {attacker_list.get(name).split()[1]}')
-                            if self.checkbox_alarm.isChecked():
-                                self.trayIcon.showMessage(
-                                    "DDOS 스냅샷",
-                                    f'[{tm()}] 공격을 감지했습니다!\n공격자: {name.split()[0]}\n'
-                                    f'공격유형: {type[1]}',
-                                    QSystemTrayIcon.Information,
-                                    2000
-                                )
-                            if self.checkbox_defender.isChecked():
-                                if check_su():
-                                    self.console.append(f'\n[{tm()}] IP를 바꿔 공격을 우회하는 중입니다.')
-                                    change_ip(self)
-                                else:
-                                    self.console.append(f'[{tm()}] 관리자 권한이 없습니다. 방어기능이 작동하지 않습니다.')
-                except_attacker_list.append(name)
+                type = attack_type(attacker_list.get(name).split()[0]).split('/')
+                if activate_proto(self, type[0]):
+                    if (type[2] == 'LT'):
+                        self.console.append(f' \n[{tm()}] 공격자: {name.split()[0]}\n'
+                                            f'└> 공격유형: {type[1]} △ 저대역폭 공격\n'
+                                            f'└> 포트: {attacker_list.get(name).split()[1]}')
+                        if self.checkbox_alarm.isChecked():
+                            self.trayIcon.showMessage(
+                                "DDOS 스냅샷",
+                                f'[{tm()}] 공격을 감지했습니다!\n공격자: {name.split()[0]}\n'
+                                f'공격유형: {type[1]} △ 저대역폭 공격',
+                                QSystemTrayIcon.Information,
+                                2000
+                            )
+                        if self.checkbox_defender.isChecked():
+                            if check_su():
+                                self.console.append(f'\n[{tm()}] IP를 바꿔 공격을 우회하는 중입니다.')
+                                change_ip(self)
+                            else:
+                                self.console.append(f'[{tm()}] 관리자 권한이 없습니다. 방어기능이 작동하지 않습니다.')
+                    elif traffic_limit:
+                        self.console.append(f' \n[{tm()}] 공격자: {name.split()[0]}\n'
+                                            f'└> 공격유형: {type[1]}\n'
+                                            f'└> 포트: {attacker_list.get(name).split()[1]}')
+                        if self.checkbox_alarm.isChecked():
+                            self.trayIcon.showMessage(
+                                "DDOS 스냅샷",
+                                f'[{tm()}] 공격을 감지했습니다!\n공격자: {name.split()[0]}\n'
+                                f'공격유형: {type[1]}',
+                                QSystemTrayIcon.Information,
+                                2000
+                            )
+                        if self.checkbox_defender.isChecked():
+                            if check_su():
+                                self.console.append(f'\n[{tm()}] IP를 바꿔 공격을 우회하는 중입니다.')
+                                change_ip(self)
+                            else:
+                                self.console.append(f'[{tm()}] 관리자 권한이 없습니다. 방어기능이 작동하지 않습니다.')
+            except_attacker_list.append(name)
 
 
     def refresh_traffic_box(self):
