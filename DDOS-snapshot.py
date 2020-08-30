@@ -19,7 +19,7 @@ danger_traffic_limit = 5000
 traffic_limit = False
 over_traffic = True
 
-low_traffic_dos_multiply = 10
+low_traffic_dos_multiply = 5
 
 attacker_list = {0:0}
 except_attacker_list = [0]
@@ -299,7 +299,7 @@ def snapshot():
                 P_ip = name.split()[1]
                 P_port = name.split()[2]
                 P_count = temp_packet.get(name)
-                if P_count > (danger_traffic_limit*2 / (danger_traffic_limit/50)):
+                if P_count > (danger_traffic_limit*2 / (danger_traffic_limit/30)):
                     if not f'{P_ip} {P_type}' in attacker_list:
                         if attack_type(P_type).split('/')[2] == 'LT' or traffic_limit:
                             attacker_list[f'{P_ip} {P_type}'] = f'{P_type} {P_port}'
