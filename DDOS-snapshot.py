@@ -9,7 +9,7 @@ import time
 import os
 import ctypes
 
-default_interface = str(conf.iface).replace('[','***').replace(']','***').split('***')[1]
+default_interface = str(conf.iface)
 
 interface = conf.iface
 
@@ -603,7 +603,7 @@ class MyWindow(QMainWindow, Ui_Form):
         self.reset.clicked.connect(self.reset_option)
         self.apply.clicked.connect(self.apply_option)
 
-        self.interfacetext.setText(str(conf.iface).replace('[','***').replace(']','***').split('***')[1])
+        self.interfacetext.setText(str(conf.iface))
 
         self.checkbox_alarm.stateChanged.connect(self.change_image_alarm)
         self.button_alarm.clicked.connect(self.change_checkbox_alarm)
@@ -794,7 +794,7 @@ class MyWindow(QMainWindow, Ui_Form):
                 self.console.append(f'[{tm()}] 트래픽 임계치 설정을 할 수 없습니다. 숫자를 입력해주세요.')
 
     def set_interface(self):
-        if not str(conf.iface).replace('[','***').replace(']','***').split('***')[1] == self.interfacetext.toPlainText():
+        if not str(conf.iface) == self.interfacetext.toPlainText():
             if check_interface(self.interfacetext.toPlainText()):
                 conf.iface = IFACES.dev_from_name(self.interfacetext.toPlainText())
                 self.console.append(f'[{tm()}] 새로운 네트워크 인터페이스 적용: {self.interfacetext.toPlainText()}')
